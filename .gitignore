@@ -1,0 +1,5 @@
+*.exe
+__pycache__/
+.last_upload_url
+wsl_clipboard_temp.png
+moonchan_cookies.txt
