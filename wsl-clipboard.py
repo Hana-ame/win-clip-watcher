@@ -28,15 +28,19 @@ log = logging.getLogger("clipfast")
 
 client = MoonchanClient()
 
-def post_image(p:str):
+
+def post_image(p: str):
     client.post_topic(10001, "", "", "", p)
-def post_text(text:str):
+
+
+def post_text(text: str):
     client.post_topic(10001, "", "", text, "")
 
 
 # ==============================
 #  占位处理函数 —— 在此编写逻辑
 # ==============================
+
 
 def on_new_text(text: str):
     """
@@ -47,8 +51,10 @@ def on_new_text(text: str):
 
     # ---- 你的文本处理逻辑写在这里 ----
     final_url = upload_text(text)
-    
-    post_text(f"{preview}\n{'...' if len(text.strip()) > 100 else ''}[全文]({final_url})")
+
+    post_text(
+        f"{preview}\n{'...' if len(text.strip()) > 100 else ''}[全文]({final_url})"
+    )
 
     pass
 
@@ -61,15 +67,14 @@ def on_new_image(image_path: str):
     if os.path.exists(image_path):
         size_kb = os.path.getsize(image_path) / 1024
         log.info(f"新图片: {image_path} ({size_kb:.1f} KB)")
-        
+
         # ---- 你的图片处理逻辑写在这里 ----
-            
+
         print(f"正在压缩 {image_path} -> AVIF ...")
         avif_bytes = compress_avif_to_bytes(image_path, quality=80, speed=5)
 
         public_url = upload_file(
-            data_bytes=avif_bytes,
-            custom_name="compressed_image.avif"
+            data_bytes=avif_bytes, custom_name="compressed_image.avif"
         )
 
         if public_url:
@@ -87,6 +92,7 @@ def on_new_image(image_path: str):
 
 # --------------------- 辅助函数 ---------------------
 
+
 def win_path_to_wsl(win_path: str) -> str:
     """将 C:\\Temp\\xxx 转换为 /mnt/c/Temp/xxx"""
     try:
@@ -98,6 +104,7 @@ def win_path_to_wsl(win_path: str) -> str:
 
 
 # --------------------- 主进程 ---------------------
+
 
 def main():
     if not os.path.exists(GO_WATCHER_EXE):
@@ -125,7 +132,7 @@ def main():
             line = process.stdout.readline()
             if not line:
                 break  # Go 进程已退出
-                
+
             header = line.strip()
 
             if header == "EVENT:TEXT":

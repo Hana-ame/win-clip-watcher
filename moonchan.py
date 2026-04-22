@@ -31,7 +31,7 @@ class MoonchanClient:
         # 尝试从文件加载已有的 Cookie
         if os.path.exists(self.cookie_file):
             try:
-                with open(self.cookie_file, 'rb') as f:
+                with open(self.cookie_file, "rb") as f:
                     session.cookies.update(pickle.load(f))
                 return session
             except Exception:
@@ -43,7 +43,7 @@ class MoonchanClient:
             r = session.get(self.BASE_URL + "cookie", timeout=10)
             r.raise_for_status()
             # 保存 Cookie 供后续使用
-            with open(self.cookie_file, 'wb') as f:
+            with open(self.cookie_file, "wb") as f:
                 pickle.dump(session.cookies, f)
         except Exception as e:
             print(f"Error getting cookie: {e}")
@@ -82,7 +82,9 @@ class MoonchanClient:
         r.raise_for_status()
         return r.json()
 
-    def post_topic(self, bid: int, nickname: str, title: str, content: str, attachment: str = "") -> Dict[str, Any]:
+    def post_topic(
+        self, bid: int, nickname: str, title: str, content: str, attachment: str = ""
+    ) -> Dict[str, Any]:
         """
         发布新主题。
 
@@ -103,14 +105,18 @@ class MoonchanClient:
             "n": nickname,
             "t": title,
             "txt": content,
-            "p": attachment
+            "p": attachment,
         }
         r = self.session.post(url, json=payload, timeout=10)
         r.raise_for_status()
         # 成功时可能返回空响应体
-        return {"status": "success", "code": r.status_code} if r.text == "" else r.json()
+        return (
+            {"status": "success", "code": r.status_code} if r.text == "" else r.json()
+        )
 
-    def reply_topic(self, bid: int, tid: int, nickname: str, content: str, attachment: str = "") -> Dict[str, Any]:
+    def reply_topic(
+        self, bid: int, tid: int, nickname: str, content: str, attachment: str = ""
+    ) -> Dict[str, Any]:
         """
         回复已有主题。
 
@@ -131,11 +137,13 @@ class MoonchanClient:
             "n": nickname,
             "t": "",
             "txt": content,
-            "p": attachment
+            "p": attachment,
         }
         r = self.session.post(url, json=payload, timeout=10)
         r.raise_for_status()
-        return {"status": "success", "code": r.status_code} if r.text == "" else r.json()
+        return (
+            {"status": "success", "code": r.status_code} if r.text == "" else r.json()
+        )
 
 
 def main():
