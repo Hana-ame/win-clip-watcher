@@ -9,9 +9,12 @@ import base64
 import os
 import sys
 import logging
+import hashlib
+import threading
+from datetime import datetime
 
 from avif import compress_avif_to_bytes
-from upload import upload_file, main as upload_text
+from upload import upload_file, main as upload_text, gzip_compress_text, wrap_gzip_url
 from moonchan import MoonchanClient
 
 # ===================== 配置 =====================
@@ -27,6 +30,22 @@ logging.basicConfig(
 log = logging.getLogger("clipfast")
 
 client = MoonchanClient()
+
+seen_hashes = set()
+HISTORY_FILE = "clipboard_history.md"
+
+
+def get_content_hash(content):
+    if isinstance(content, bytes):
+        return hashlib.sha256(content).hexdigest()
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+def append_to_history(content: str):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(HISTORY_FILE, "a", encoding="utf-8") as f:
+        f.write(f"\n\n**{timestamp}**\n{content}\n")
+    log.info(f"内容已记录到本地历史文件: {HISTORY_FILE}")
 
 
 def post_image(p: str):
@@ -46,15 +65,29 @@ def on_new_text(text: str):
     """
     [占位函数] 剪贴板出现新文本时调用
     """
+    text_hash = get_content_hash(text)
+    if text_hash in seen_hashes:
+        log.info("文本内容重复，跳过")
+        return
+    seen_hashes.add(text_hash)
+
     preview = text.strip().replace("\n", "\\n")[:100]
     log.info(f"新文本: {preview}{'...' if len(text.strip()) > 100 else ''}")
 
-    # ---- 你的文本处理逻辑写在这里 ----
-    final_url = upload_text(text)
+    stripped_text = text.strip()
+    lines = stripped_text.splitlines()
+    if len(lines) > 5:
+        compressed_data = gzip_compress_text(stripped_text, filename="clip.md.gz")
+        upload_name = f"clip_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md.gz"
+        public_url = upload_file(data_bytes=compressed_data, custom_name=upload_name)
 
-    post_text(
-        f"{preview}\n{'...' if len(text.strip()) > 100 else ''}[全文]({final_url})"
-    )
+        if public_url:
+            preview_lines = "\n".join(lines[:5])
+            append_to_history(f"{preview_lines}\n\n...\n\n🔗 {wrap_gzip_url(public_url)}")
+        else:
+            append_to_history(stripped_text)
+    else:
+        append_to_history(stripped_text)
 
     pass
 
@@ -68,10 +101,18 @@ def on_new_image(image_path: str):
         size_kb = os.path.getsize(image_path) / 1024
         log.info(f"新图片: {image_path} ({size_kb:.1f} KB)")
 
-        # ---- 你的图片处理逻辑写在这里 ----
+        # 读取图片数据
+        with open(image_path, "rb") as f:
+            img_data = f.read()
+
+        img_hash = get_content_hash(img_data)
+        if img_hash in seen_hashes:
+            log.info("图片内容重复，跳过")
+            return
+        seen_hashes.add(img_hash)
 
         print(f"正在压缩 {image_path} -> AVIF ...")
-        avif_bytes = compress_avif_to_bytes(image_path, quality=80, speed=5)
+        avif_bytes = compress_avif_to_bytes(img_data, quality=80, speed=5)
 
         public_url = upload_file(
             data_bytes=avif_bytes, custom_name="compressed_image.avif"
@@ -79,10 +120,9 @@ def on_new_image(image_path: str):
 
         if public_url:
             print(f"\n✅ 上传成功！\n🔗 URL: {public_url}")
-            # 可选：将 URL 保存到文件，方便其他工具读取
             with open(".last_upload_url", "w") as f:
                 f.write(public_url)
-            post_image(public_url)
+            append_to_history(f"![图片]({public_url})")
         else:
             print("上传失败")
 

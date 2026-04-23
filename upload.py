@@ -135,3 +135,9 @@ def main(original_text: str):
 
 # if __name__ == "__main__":
 #     main()
+
+
+def wrap_gzip_url(url: str) -> str:
+    base_downloader = "https://upload.moonchan.xyz/api/01LLWEUU2IHLNHZCGIIFHZW6XZXL4ZHVZO/downloader.html"
+    wrapped_url = f"{base_downloader}?url={urllib.parse.quote(url, safe='')}"
+    return f"[下载/查看]({wrapped_url})"
