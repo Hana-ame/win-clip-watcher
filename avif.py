@@ -9,9 +9,14 @@ from upload import upload_file
 # 或者从另一个模块导入
 
 
-def compress_avif_to_bytes(image_path: str, quality: int = 75, speed: int = 6) -> bytes:
-    """将图片压缩为 AVIF 格式并返回 bytes 对象"""
-    img = Image.open(image_path)
+def compress_avif_to_bytes(
+    image_input: bytes | str, quality: int = 75, speed: int = 6
+) -> bytes:
+    """将图片（路径或 bytes）压缩为 AVIF 格式并返回 bytes 对象"""
+    if isinstance(image_input, bytes):
+        img = Image.open(io.BytesIO(image_input))
+    else:
+        img = Image.open(image_input)
     with io.BytesIO() as output:
         img.save(output, format="AVIF", quality=quality, speed=speed)
         return output.getvalue()
