@@ -134,9 +134,6 @@ def main(original_text: str):
 
 
 def wrap_gzip_url(url: str) -> str:
-    """
-    将 gzip 文件的直接链接包装在下载器页面中，并返回 Markdown 格式的链接
-    """
     base_downloader = "https://upload.moonchan.xyz/api/01LLWEUU2IHLNHZCGIIFHZW6XZXL4ZHVZO/downloader.html"
     wrapped_url = f"{base_downloader}?url={urllib.parse.quote(url, safe='')}"
     return f"[下载/查看]({wrapped_url})"
